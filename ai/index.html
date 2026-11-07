@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Numa AI</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Hanken+Grotesk:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap">
+<style>
+:root{ --bg:#F2F4F8; --surface:#FFFFFF; --ink:#0E1116; --muted:#556070; --line:#D8DEE8; --accent:#2447F5; --on-accent:#FFFFFF; --soft:#E6EBFF; --code:#0E1116; --code-ink:#E8ECF5; --err:#B42318; --display:'Bricolage Grotesque',system-ui,sans-serif; --body:'Hanken Grotesk',system-ui,sans-serif; --mono:'DM Mono',ui-monospace,monospace; }
+@media (prefers-color-scheme: dark){ :root{--bg:#0B0E14;--surface:#131824;--ink:#ECEFF6;--muted:#98A1B3;--line:#232A3A;--accent:#7C93FF;--on-accent:#0B1033;--soft:#1B2340;--code:#070A10;--code-ink:#E8ECF5;--err:#FF8A80;color-scheme:dark} }
+*{box-sizing:border-box} html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.6}
+button,textarea,input{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.hidden{display:none!important}
+.gate{min-height:100%;display:grid;place-items:center;padding:24px}
+.gate .card{max-width:460px;width:100%;background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:32px;display:grid;gap:16px}
+.logo{font-family:var(--display);font-weight:800;font-size:26px;letter-spacing:-.03em;text-decoration:none;color:inherit}
+.logo i{font-style:normal;color:var(--accent)}
+.gate h1{font-family:var(--display);font-size:32px;line-height:1.05;letter-spacing:-.03em;margin:0}
+.gate p{margin:0;color:var(--muted)}
+.field{display:grid;gap:6px}
+.field input{padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--bg)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 20px;border-radius:10px;font-weight:600;border:1.5px solid var(--ink);background:transparent;cursor:pointer;text-decoration:none}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.error{color:var(--err);font-size:15px}
+.app{height:100%;display:grid;grid-template-columns:280px minmax(0,1fr)}
+.side{border-right:1px solid var(--line);background:var(--surface);display:flex;flex-direction:column;min-height:0;padding:16px;gap:14px;padding-top:max(16px,env(safe-area-inset-top))}
+.side .new{width:100%}
+.convs{flex:1;overflow:auto;display:grid;align-content:start;gap:2px;margin:0 -8px;padding:0 8px}
+.conv{display:flex;align-items:center;gap:6px;border-radius:8px}
+.conv button.open{flex:1;min-width:0;text-align:left;background:none;border:0;padding:9px 10px;border-radius:8px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:15px}
+.conv:hover,.conv.active{background:var(--soft)}
+.conv button.del{background:none;border:0;padding:6px 8px;cursor:pointer;color:var(--muted);opacity:0;border-radius:6px}
+.conv:hover button.del,.conv.active button.del{opacity:1}
+.plan{border:1px solid var(--line);border-radius:14px;padding:14px;display:grid;gap:6px;font-size:14px}
+.plan .tag{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.plan b{font-family:var(--display);font-size:20px;letter-spacing:-.02em}
+.meter{height:6px;border-radius:3px;background:var(--line);overflow:hidden}
+.meter i{display:block;height:100%;background:var(--accent)}
+.plan .muted{color:var(--muted)}
+.main{display:flex;flex-direction:column;min-height:0;min-width:0}
+.top{display:flex;align-items:center;gap:12px;padding:12px 20px;border-bottom:1px solid var(--line);padding-top:max(12px,env(safe-area-inset-top))}
+.top .menu{display:none;background:none;border:1px solid var(--line);border-radius:8px;padding:6px 10px;cursor:pointer}
+.top .title{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
+.badge{font-family:var(--mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;padding:4px 10px;border-radius:999px;background:var(--soft);color:var(--accent);white-space:nowrap}
+.thread{flex:1;overflow:auto;padding:24px 20px 8px}
+.inner{max-width:780px;margin:0 auto;display:grid;gap:22px}
+.msg{display:grid;gap:6px;min-width:0}
+.msg .who{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.msg.user .bubble{background:var(--soft);border-radius:14px;padding:12px 16px;white-space:pre-wrap;word-wrap:break-word;justify-self:end;max-width:90%}
+.msg.user .who{justify-self:end}
+.md{min-width:0;overflow-wrap:anywhere}
+.md p,.md ul,.md ol{margin:.6em 0}
+.md a{color:var(--accent)}
+.md code{font-family:var(--mono);font-size:.9em;background:var(--soft);padding:.1em .35em;border-radius:5px}
+.md pre{position:relative;background:var(--code);color:var(--code-ink);border-radius:12px;padding:16px;overflow:auto;font-size:14px;line-height:1.5;white-space:pre-wrap}
+.empty{text-align:center;padding:8vh 0 0;display:grid;gap:14px;justify-items:center}
+.empty h2{font-family:var(--display);font-size:clamp(28px,5vw,40px);letter-spacing:-.03em;line-height:1.05;margin:0}
+.empty p{color:var(--muted);margin:0;max-width:46ch}
+.ideas{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:10px;width:100%;margin-top:10px}
+.ideas button{text-align:left;padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--surface);cursor:pointer;font-size:15px}
+.ideas button:hover{border-color:var(--accent)}
+.composer{padding:12px 20px max(16px,env(safe-area-inset-bottom))}
+.composer form{max-width:780px;margin:0 auto;display:flex;gap:10px;align-items:flex-end;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:8px 8px 8px 16px}
+.composer textarea{flex:1;border:0;background:transparent;resize:none;max-height:240px;min-height:28px;padding:6px 0;outline:none;line-height:1.5}
+.composer .send{padding:10px 16px}
+.hint{max-width:780px;margin:6px auto 0;font-size:12px;color:var(--muted);text-align:center}
+.pulse-text{animation:pulse 1.2s infinite;color:var(--accent)}
+@keyframes pulse{50%{opacity:0.4}}
+@media (max-width:820px){
+  .app{grid-template-columns:minmax(0,1fr)}
+  .side{position:fixed;inset:0 auto 0 0;width:min(86vw,300px);z-index:20;transform:translateX(-100%);transition:transform .2s}
+  .side.open{transform:none}
+  .top .menu{display:inline-block}
+  .scrim{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:19}
+}
+</style>
+</head>
+<body>
+<div id="gate" class="gate hidden">
+  <form class="card" id="gate-form">
+    <a class="logo" href="/">numa<i>.</i></a>
+    <h1>Open your Numa AI</h1>
+    <p id="gate-msg">Use the private link we sent you by email, or paste your access key here.</p>
+    <label class="field"><span>Access key</span><input id="gate-key" autocomplete="off" required></label>
+    <div id="gate-err" class="error hidden" role="alert"></div>
+    <button class="btn primary" type="submit">Open</button>
+  </form>
+</div>
+
+<div id="app" class="app hidden">
+  <aside class="side" id="side">
+    <a class="logo" href="/">numa<i>.</i> <span style="font-size:15px;font-family:var(--body);font-weight:600;color:var(--muted)">AI</span></a>
+    <button class="btn primary new" id="new-chat" type="button">+ New chat</button>
+    <nav class="convs" id="convs" aria-label="Your chats"></nav>
+    <div class="plan" id="plan"></div>
+    <button class="btn" id="signout" type="button" style="font-size:14px;padding:8px">Sign out on this device</button>
+  </aside>
+  <div class="scrim hidden" id="scrim"></div>
+  <main class="main">
+    <header class="top">
+      <button class="menu" id="menu" type="button" aria-label="Open chats">☰</button>
+      <div class="title" id="title">New chat</div>
+      <span class="badge" id="badge"></span>
+    </header>
+    <div class="thread" id="thread"><div class="inner" id="inner"></div></div>
+    <div class="composer">
+      <form id="composer">
+        <textarea id="input" rows="1" placeholder="Ask Numa AI about your website..." aria-label="Message"></textarea>
+        <button class="btn primary send" id="send" type="submit">Send</button>
+      </form>
+      <div class="hint" id="hint">Enter to send · Shift+Enter for a new line</div>
+    </div>
+  </main>
+</div>
+
+<script>
+// --- UPDATED GEMINI API CONFIGURATION ---
+const GEMINI_API_KEY = "AQ.Ab8RN6Ktkfb_vFj7VgGlQPEkSxmFV_g8nFG3oNHH53Y9lIc-Gg";
+
+const KEY = 'numa_ai_key';
+const $ = (id) => document.getElementById(id);
+const params = new URLSearchParams(location.search);
+
+if (params.get('key')) {
+  localStorage.setItem(KEY, params.get('key').trim());
+  history.replaceState(null, '', location.pathname);
+}
+
+let currentKey = localStorage.getItem(KEY);
+let links = JSON.parse(localStorage.getItem('numa_links') || '[]');
+let activeLink = links.find(l => l.token === currentKey);
+
+const TIER_TAGLINES = {
+  starter: { name: 'Starter', tagline: 'Fast, careful answers', steps: 1 },
+  standard: { name: 'Standard', tagline: 'Draft + expert review', steps: 2 },
+  premium: { name: 'Premium', tagline: '4-step deep reasoning', steps: 4 }
+};
+
+let currentConvId = null;
+let allChats = JSON.parse(localStorage.getItem('numa_chats_' + currentKey) || '{}');
+
+function showGate(msg, isError) {
+  $('app').classList.add('hidden');
+  $('gate').classList.remove('hidden');
+  if (msg) {
+    $('gate-err').textContent = msg;
+    $('gate-err').classList.toggle('hidden', !isError);
+    if (!isError) $('gate-msg').textContent = msg;
+  }
+}
+
+$('gate-form').addEventListener('submit', (e) => {
+  e.preventDefault();
+  let v = $('gate-key').value.trim();
+  try { const u = new URL(v); v = u.searchParams.get('key') || v; } catch {}
+  currentKey = v;
+  localStorage.setItem(KEY, currentKey);
+  links = JSON.parse(localStorage.getItem('numa_links') || '[]');
+  activeLink = links.find(l => l.token === currentKey);
+  boot();
+});
+
+$('signout').addEventListener('click', () => {
+  if (!confirm('Sign out on this device?')) return;
+  localStorage.removeItem(KEY);
+  location.reload();
+});
+
+function renderPlan() {
+  if (!activeLink) return;
+  const left = Math.max(0, activeLink.messageLimit - activeLink.messagesUsed);
+  const pct = Math.min(100, (activeLink.messagesUsed / activeLink.messageLimit) * 100);
+  const tInfo = TIER_TAGLINES[activeLink.tier] || { name: activeLink.tier, tagline: '', steps: 1 };
+  
+  $('plan').innerHTML = `
+    <span class="tag">Your plan</span>
+    <b>${tInfo.name}</b>
+    <span class="muted">${tInfo.tagline}</span>
+    <div class="meter" aria-hidden="true"><i style="width:${pct}%"></i></div>
+    <span>${left} of ${activeLink.messageLimit} messages left</span>`;
+  $('badge').textContent = tInfo.name + (tInfo.steps > 1 ? ` · ${tInfo.steps}-step` : '');
+}
+
+function renderConvs() {
+  const box = $('convs');
+  box.innerHTML = '';
+  const chatsArr = Object.values(allChats);
+  if (!chatsArr.length) {
+    box.innerHTML = '<p style="color:var(--muted);font-size:14px;margin:4px 10px">Your chats will appear here.</p>';
+    return;
+  }
+  for (const c of chatsArr) {
+    const row = document.createElement('div');
+    row.className = 'conv' + (c.id === currentConvId ? ' active' : '');
+    row.innerHTML = `<button class="open" type="button"></button><button class="del" type="button" title="Delete chat">×</button>`;
+    row.querySelector('.open').textContent = c.title;
+    row.querySelector('.open').addEventListener('click', () => { openConv(c.id); closeSide(); });
+    row.querySelector('.del').addEventListener('click', () => {
+      if (!confirm('Delete this chat?')) return;
+      delete allChats[c.id];
+      localStorage.setItem('numa_chats_' + currentKey, JSON.stringify(allChats));
+      if (currentConvId === c.id) newChat(); else renderConvs();
+    });
+    box.appendChild(row);
+  }
+}
+
+const IDEAS = [
+  'Create a modern Netflix landing page HTML and CSS.',
+  'Suggest a color palette and fonts for my shop.',
+  'Make a mobile-friendly HTML price table for 3 services.',
+  'Write 10 FAQ questions and answers for my business.'
+];
+
+function formatText(txt) {
+  return txt
+    .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
+    .replace(/\n/g, '<br>');
+}
+
+function renderThread() {
+  const inner = $('inner');
+  inner.innerHTML = '';
+  const chat = allChats[currentConvId];
+  
+  if (!chat || !chat.messages.length) {
+    const tInfo = TIER_TAGLINES[activeLink.tier] || { name: activeLink.tier };
+    inner.innerHTML = `<div class="empty">
+      <span class="badge">${tInfo.name} AI</span>
+      <h2>Hi, ${activeLink.customerName || 'Friend'}. What should we work on?</h2>
+      <p>Ask for website text, design ideas, ready-to-paste code, search tips or anything else for your business.</p>
+      <div class="ideas">${IDEAS.map((i) => `<button type="button">${i}</button>`).join('')}</div>
+    </div>`;
+    inner.querySelectorAll('.ideas button').forEach((b) =>
+      b.addEventListener('click', () => { $('input').value = b.textContent; autosize(); $('input').focus(); }));
+    return;
+  }
+  
+  for (const m of chat.messages) {
+    const el = document.createElement('div');
+    el.className = 'msg ' + m.role;
+    if (m.role === 'user') {
+      el.innerHTML = '<span class="who">You</span><div class="bubble"></div>';
+      el.querySelector('.bubble').textContent = m.content;
+    } else {
+      el.innerHTML = `<span class="who">Numa AI</span><div class="md">${formatText(m.content)}</div>`;
+    }
+    inner.appendChild(el);
+  }
+}
+
+function openConv(id) {
+  currentConvId = id;
+  const chat = allChats[id];
+  $('title').textContent = chat ? chat.title : 'New chat';
+  renderConvs();
+  renderThread();
+}
+
+function newChat() {
+  currentConvId = null;
+  $('title').textContent = 'New chat';
+  renderConvs();
+  renderThread();
+  $('input').focus();
+}
+
+async function callAI(userMessage) {
+  try {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ 
+          parts: [{ 
+            text: "You are Numa AI, an expert senior web designer and full-stack software engineer. Provide deep, thorough, advanced reasoning and clean production-ready HTML, CSS, and JS code or professional English responses for the user request: " + userMessage 
+          }] 
+        }],
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 8192
+        }
+      })
+    });
+    const data = await response.json();
+    if (data.candidates && data.candidates[0].content.parts[0].text) {
+      return data.candidates[0].content.parts[0].text;
+    }
+    if (data.error && data.error.message) {
+      return "Error from Gemini API: " + data.error.message;
+    }
+  } catch (err) {
+    return "Network connection error while reaching Gemini API.";
+  }
+
+  return "Error: Unable to process your request. Please try again.";
+}
+
+$('composer').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const text = $('input').value.trim();
+  if (!text) return;
+  
+  if (activeLink.messagesUsed >= activeLink.messageLimit) {
+    alert('Message limit reached.');
+    return;
+  }
+
+  if (!currentConvId) {
+    currentConvId = 'chat_' + Date.now();
+    allChats[currentConvId] = { id: currentConvId, title: text.substring(0, 30), messages: [] };
+  }
+
+  allChats[currentConvId].messages.push({ role: 'user', content: text });
+  activeLink.messagesUsed += 1;
+  
+  localStorage.setItem('numa_chats_' + currentKey, JSON.stringify(allChats));
+  links = links.map(l => l.token === activeLink.token ? activeLink : l);
+  localStorage.setItem('numa_links', JSON.stringify(links));
+
+  $('input').value = '';
+  autosize();
+  renderPlan();
+  renderConvs();
+  renderThread();
+  toBottom();
+
+  const inner = $('inner');
+  const loadingEl = document.createElement('div');
+  loadingEl.className = 'msg assistant';
+  loadingEl.id = 'loading-msg';
+  loadingEl.innerHTML = `<span class="who">Numa AI</span><div class="md"><p class="pulse-text">Numa AI is thinking deeply and writing code...</p></div>`;
+  inner.appendChild(loadingEl);
+  toBottom();
+
+  const aiReply = await callAI(text);
+  
+  const loadNode = $('loading-msg');
+  if (loadNode) loadNode.remove();
+
+  allChats[currentConvId].messages.push({ role: 'assistant', content: aiReply });
+  localStorage.setItem('numa_chats_' + currentKey, JSON.stringify(allChats));
+  renderThread();
+  toBottom();
+});
+
+function autosize() {
+  const t = $('input');
+  t.style.height = 'auto';
+  t.style.height = Math.min(t.scrollHeight, 240) + 'px';
+}
+function toBottom() { const t = $('thread'); t.scrollTop = t.scrollHeight; }
+
+$('input').addEventListener('input', autosize);
+$('input').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); $('composer').dispatchEvent(new Event('submit')); }
+});
+
+$('new-chat').addEventListener('click', () => { newChat(); closeSide(); });
+function closeSide() { $('side').classList.remove('open'); $('scrim').classList.add('hidden'); }
+$('menu').addEventListener('click', () => { $('side').classList.add('open'); $('scrim').classList.remove('hidden'); });
+$('scrim').classList.add('hidden');
+
+function boot() {
+  if (!currentKey || !activeLink || activeLink.state === 'revoked') {
+    showGate(activeLink && activeLink.state === 'revoked' ? 'This access link has been turned off.' : undefined);
+    return;
+  }
+  $('gate').classList.add('hidden');
+  $('app').classList.remove('hidden');
+  document.title = `Numa AI · ${activeLink.tier}`;
+  renderPlan();
+  renderConvs();
+  const chatsArr = Object.values(allChats);
+  if (chatsArr.length) {
+    openConv(chatsArr[0].id);
+  } else {
+    newChat();
+  }
+}
+
+boot();
+</script>
+</body>
+</html>
